@@ -114,6 +114,7 @@ void vUARTPrintTask( void *pvParameters );
 static void vLEDTask( void *pvParameters );
 static void vLightSensorTask( void *pvParameters );
 static void vTask2( void *pvParameters );
+static void vWDTTask( void *pvParameters );
 
 /*
  * Configures the timers and interrupts for the fast interrupt test as
@@ -152,6 +153,8 @@ int main( void )
     xTaskCreate( vLightSensorTask, "light sensor", configMINIMAL_STACK_SIZE, NULL, 6, NULL );
     xTaskCreate( vTask2, "task2", configMINIMAL_STACK_SIZE, NULL, 6, NULL );
 //    xTaskCreate( vCheckTask, "Check", mainCHECK_TASK_STACK_SIZE, NULL, mainCHECK_TASK_PRIORITY, NULL );
+    xTaskCreate( vWDTTask, "task2", configMINIMAL_STACK_SIZE, NULL, 6, NULL );
+
 
     /* The suicide tasks must be created last as they need to know how many
     tasks were running prior to their creation in order to ascertain whether
@@ -178,6 +181,8 @@ void vLEDTask(void * pvParameters)
     GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
     GPIO_Init(GPIOC, &GPIO_InitStructure);
 
+    vTaskDelay(2000);
+
     for(;;) {
         GPIO_WriteBit(GPIOC, GPIO_Pin_13, Bit_SET);
         vTaskDelay(100);
@@ -199,7 +204,7 @@ static void vLightSensorTask( void *pvParameters )
     GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;
     GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
     GPIO_Init(GPIOC, &GPIO_InitStructure);
-	
+
     for(;;) {
         if(Bit_SET == GPIO_ReadInputDataBit(GPIOA, GPIO_Pin_11))
             printf("In night\n\r");
@@ -222,6 +227,17 @@ static void vTask2( void *pvParameters )
 /*-----------------------------------------------------------*/
 
 
+static void vWDTTask( void *pvParameters )
+{
+    IWDG_WriteAccessCmd(IWDG_WriteAccess_Enable);
+    IWDG_SetPrescaler(IWDG_Prescaler_32);	/*Lock 40KHz */
+    IWDG_SetReload(0xFF);
+    IWDG_Enable();
+    for(;;) {
+        vTaskDelay(100);
+        IWDG_ReloadCounter();
+    }
+}
 static void vCheckTask( void *pvParameters )
 {
     TickType_t xLastExecutionTime;
