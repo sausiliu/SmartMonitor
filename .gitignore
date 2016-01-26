@@ -10,6 +10,10 @@ Output/*
 *.bak
 *.uvgui*
 *.dep
+JLinkLog.txt
+*.orig
+
+
 
 # Object files
 *.o
