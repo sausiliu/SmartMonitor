@@ -9,6 +9,7 @@ Lists/*
 Output/*
 *.bak
 *.uvgui*
+*.dep
 
 # Object files
 *.o

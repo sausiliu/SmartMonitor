@@ -25,6 +25,7 @@
 	PC 13  -- LED  PC13 --|<|--~~-o 3.3v
 	Sensor: Light
 	Sensor: Infrared
+	uart1: PA9-TX PA10-RX
 */
 
 /* Standard includes. */
@@ -109,6 +110,7 @@ int fputc( int ch, FILE *f );
  * via a queue.
  */
 static void vCheckTask( void *pvParameters );
+void vUARTPrintTask( void *pvParameters );
 static void vLEDTask( void *pvParameters );
 static void vLightSensorTask( void *pvParameters );
 static void vTask2( void *pvParameters );
@@ -137,17 +139,19 @@ int main( void )
     /* Create the queue used by the uart task.  Messages for display on the uart1
     are received via this queue. */
     xUARTQueue = xQueueCreate( mainUART_QUEUE_SIZE, sizeof( xUARTMessage ) );
-    xSem = xSemaphoreCreateBinary();
-    xSem1	= xSemaphoreCreateBinary();
+//	xSem = xSemaphoreCreateBinary();
+//	xSem1	= xSemaphoreCreateBinary();
     prvSetupHardware();
 
     /* Start the standard demo tasks. */
 
     vAltStartComTestTasks( mainCOM_TEST_PRIORITY, mainCOM_TEST_BAUD_RATE, mainCOM_TEST_LED );
-//    xTaskCreate( vLEDTask, "led_test", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY, NULL );
+//	  xTaskCreate( vUARTPrintTask, "uart_print", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY, NULL );
+
+    xTaskCreate( vLEDTask, "led_test", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY, NULL );
     xTaskCreate( vLightSensorTask, "light sensor", configMINIMAL_STACK_SIZE, NULL, 6, NULL );
     xTaskCreate( vTask2, "task2", configMINIMAL_STACK_SIZE, NULL, 6, NULL );
-    xTaskCreate( vCheckTask, "Check", mainCHECK_TASK_STACK_SIZE, NULL, mainCHECK_TASK_PRIORITY, NULL );
+//    xTaskCreate( vCheckTask, "Check", mainCHECK_TASK_STACK_SIZE, NULL, mainCHECK_TASK_PRIORITY, NULL );
 
     /* The suicide tasks must be created last as they need to know how many
     tasks were running prior to their creation in order to ascertain whether
@@ -175,36 +179,35 @@ void vLEDTask(void * pvParameters)
     GPIO_Init(GPIOC, &GPIO_InitStructure);
 
     for(;;) {
-//        GPIO_WriteBit(GPIOC, GPIO_Pin_13, Bit_SET);
-//        vTaskDelay(100);
-//        GPIO_WriteBit(GPIOC, GPIO_Pin_13, Bit_RESET);
-//        vTaskDelay(100);
+        GPIO_WriteBit(GPIOC, GPIO_Pin_13, Bit_SET);
+        vTaskDelay(100);
+        GPIO_WriteBit(GPIOC, GPIO_Pin_13, Bit_RESET);
+        vTaskDelay(100);
     }
 }
 
 /*-----------------------------------------------------------*/
 static void vLightSensorTask( void *pvParameters )
 {
-
     GPIO_InitTypeDef GPIO_InitStructure;
-    GPIO_InitStructure.GPIO_Pin = GPIO_Pin_9;
+    GPIO_InitStructure.GPIO_Pin = GPIO_Pin_11;
     GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN_FLOATING;
     GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
     GPIO_Init(GPIOA, &GPIO_InitStructure);
-
 
     GPIO_InitStructure.GPIO_Pin = GPIO_Pin_13;
     GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;
     GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
     GPIO_Init(GPIOC, &GPIO_InitStructure);
+	
     for(;;) {
-        if(Bit_SET == GPIO_ReadInputDataBit(GPIOA, GPIO_Pin_9)) {
-            GPIO_WriteBit(GPIOC, GPIO_Pin_13, Bit_SET);
-        } else
-            GPIO_WriteBit(GPIOC, GPIO_Pin_13, Bit_RESET);
+        if(Bit_SET == GPIO_ReadInputDataBit(GPIOA, GPIO_Pin_11))
+            printf("In night\n\r");
+        vTaskDelay(100);
     }
 }
 /*-----------------------------------------------------------*/
+
 static void vTask2( void *pvParameters )
 {
     xUARTMessage xMessage;
@@ -260,6 +263,16 @@ static void vCheckTask( void *pvParameters )
     }
 }
 /*-----------------------------------------------------------*/
+void vUARTPrintTask( void *pvParameters )
+{
+    xUARTMessage xMessage;
+
+    for( ;; )
+    {
+        while( xQueueReceive( xUARTQueue, &xMessage, portMAX_DELAY ) != pdPASS );
+        printf( ( char const * ) xMessage.pcMessage );
+    }
+}
 
 static void prvSetupHardware( void )
 {

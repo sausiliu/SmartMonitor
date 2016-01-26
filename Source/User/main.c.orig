@@ -144,7 +144,7 @@ int main( void )
     /* Start the standard demo tasks. */
 
     vAltStartComTestTasks( mainCOM_TEST_PRIORITY, mainCOM_TEST_BAUD_RATE, mainCOM_TEST_LED );
-//    xTaskCreate( vLEDTask, "led_test", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY, NULL );
+    xTaskCreate( vLEDTask, "led_test", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY, NULL );
     xTaskCreate( vLightSensorTask, "light sensor", configMINIMAL_STACK_SIZE, NULL, 6, NULL );
     xTaskCreate( vTask2, "task2", configMINIMAL_STACK_SIZE, NULL, 6, NULL );
     xTaskCreate( vCheckTask, "Check", mainCHECK_TASK_STACK_SIZE, NULL, mainCHECK_TASK_PRIORITY, NULL );
@@ -175,10 +175,11 @@ void vLEDTask(void * pvParameters)
     GPIO_Init(GPIOC, &GPIO_InitStructure);
 
     for(;;) {
-//        GPIO_WriteBit(GPIOC, GPIO_Pin_13, Bit_SET);
-//        vTaskDelay(100);
-//        GPIO_WriteBit(GPIOC, GPIO_Pin_13, Bit_RESET);
-//        vTaskDelay(100);
+			printf("led flashed \n\r");
+        GPIO_WriteBit(GPIOC, GPIO_Pin_13, Bit_SET);
+        vTaskDelay(100);
+        GPIO_WriteBit(GPIOC, GPIO_Pin_13, Bit_RESET);
+        vTaskDelay(100);
     }
 }
 
@@ -192,19 +193,20 @@ static void vLightSensorTask( void *pvParameters )
     GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
     GPIO_Init(GPIOA, &GPIO_InitStructure);
 
-	
-	    GPIO_InitStructure.GPIO_Pin = GPIO_Pin_13;
+
+    GPIO_InitStructure.GPIO_Pin = GPIO_Pin_13;
     GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;
     GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
     GPIO_Init(GPIOC, &GPIO_InitStructure);
     for(;;) {
-        if(Bit_SET == GPIO_ReadInputDataBit(GPIOA, GPIO_Pin_9)) {
-            GPIO_WriteBit(GPIOC, GPIO_Pin_13, Bit_SET);
-        } else
-            GPIO_WriteBit(GPIOC, GPIO_Pin_13, Bit_RESET);
+        if(Bit_SET == GPIO_ReadInputDataBit(GPIOA, GPIO_Pin_9))
+					printf("In night\n\r");
+				
+				vTaskDelay(10);
     }
 }
 /*-----------------------------------------------------------*/
+
 static void vTask2( void *pvParameters )
 {
     xUARTMessage xMessage;
