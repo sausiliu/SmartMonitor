@@ -139,6 +139,7 @@ NVIC_InitTypeDef NVIC_InitStructure;
 	/* Configuration for timer 3 which is used as a high resolution time
 	measurement. */
 	TIM_TimeBaseStructure.TIM_Period = ( unsigned short ) 0xffff;
+	TIM_TimeBaseStructure.TIM_Prescaler = 0x168;// PCLK1(36Mhz) / Prescaler
 	TIM_TimeBaseInit( TIM3, &TIM_TimeBaseStructure );
 	TIM_ARRPreloadConfig( TIM3, ENABLE );
 	

@@ -38,6 +38,7 @@
 
 /* Library includes. */
 #include "stm32f10x_it.h"
+#include "stm32f10x_usart.h"
 
 /* Demo app includes. */
 #include "BlockQ.h"
@@ -49,9 +50,9 @@
 #include "PollQ.h"
 #include "flash.h"
 #include "comtest2.h"
-#include "stm32f10x_usart.h"
 #include "serial.h"
 #include "semphr.h"
+#include "ultrasonic_rangefinder.h"
 
 /* Task priorities. */
 #define mainQUEUE_POLL_PRIORITY					( tskIDLE_PRIORITY + 2 )
@@ -113,7 +114,6 @@ static void vCheckTask( void *pvParameters );
 void vUARTPrintTask( void *pvParameters );
 static void vLEDTask( void *pvParameters );
 static void vLightSensorTask( void *pvParameters );
-static void vTask2( void *pvParameters );
 static void vWDTTask( void *pvParameters );
 
 /*
@@ -148,13 +148,11 @@ int main( void )
 
     vAltStartComTestTasks( mainCOM_TEST_PRIORITY, mainCOM_TEST_BAUD_RATE, mainCOM_TEST_LED );
 //	  xTaskCreate( vUARTPrintTask, "uart_print", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY, NULL );
-
     xTaskCreate( vLEDTask, "led_test", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY, NULL );
-    xTaskCreate( vLightSensorTask, "light sensor", configMINIMAL_STACK_SIZE, NULL, 6, NULL );
-    xTaskCreate( vTask2, "task2", configMINIMAL_STACK_SIZE, NULL, 6, NULL );
+//    xTaskCreate( vLightSensorTask, "light sensor", configMINIMAL_STACK_SIZE, NULL, 6, NULL );
+    xTaskCreate( vURFSensor, "UltrasonicRangefinder", configMINIMAL_STACK_SIZE, NULL, 6, NULL );
 //    xTaskCreate( vCheckTask, "Check", mainCHECK_TASK_STACK_SIZE, NULL, mainCHECK_TASK_PRIORITY, NULL );
     xTaskCreate( vWDTTask, "task2", configMINIMAL_STACK_SIZE, NULL, 6, NULL );
-
 
     /* The suicide tasks must be created last as they need to know how many
     tasks were running prior to their creation in order to ascertain whether
@@ -213,18 +211,7 @@ static void vLightSensorTask( void *pvParameters )
 }
 /*-----------------------------------------------------------*/
 
-static void vTask2( void *pvParameters )
-{
-    xUARTMessage xMessage;
-    xMessage.pcMessage = "22222222\n\r";
-    for(;;) {
-//        xSemaphoreTake(xSem, portMAX_DELAY);
-        xQueueSend( xUARTQueue, &xMessage, portMAX_DELAY );
-//			xSemaphoreGive(xSem1);
-        vTaskDelay(2000);
-    }
-}
-/*-----------------------------------------------------------*/
+
 
 
 static void vWDTTask( void *pvParameters )
@@ -238,6 +225,7 @@ static void vWDTTask( void *pvParameters )
         IWDG_ReloadCounter();
     }
 }
+
 static void vCheckTask( void *pvParameters )
 {
     TickType_t xLastExecutionTime;
