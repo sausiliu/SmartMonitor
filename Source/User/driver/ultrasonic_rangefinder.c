@@ -15,9 +15,7 @@
 
 /* The highest available interrupt priority. */
 #define timerHIGHEST_PRIORITY			( 0 )
-#define SOUND_VELOCITY	380.0f
-
-
+#define SOUND_VELOCITY	340.0f
 
 /**
 	*
@@ -30,6 +28,7 @@ static unsigned short usThisCount = 0, usLastCount = 0;
 
 void vURFSensor( void *pvParameters )
 {
+		float distance;	
     GPIO_InitTypeDef GPIO_InitStructure;
     NVIC_InitTypeDef NVIC_InitStructure;
     EXTI_InitTypeDef EXTI_InitStructure;
@@ -71,10 +70,12 @@ void vURFSensor( void *pvParameters )
             usDifference = usThisCount - usLastCount;
         else
             usDifference = 0xffff - (usLastCount - usThisCount);
-        printf("This: %d \n\r", usThisCount);
-        printf("Last: %d \n\r", usLastCount);
-				printf("Dis: %d \n\r", usDifference);
-        vTaskDelay(2000);
+//        printf("This: %d \n\r", usThisCount);
+//        printf("Last: %d \n\r", usLastCount);
+//				printf("Dis: %d \n\r", usDifference);
+				distance = usDifference * SOUND_VELOCITY / (2 * 1000.0f);
+        printf("distance: %3.3fcm \n\r", distance);
+				vTaskDelay(2000);
         if(flags) {
             printf("\n\r");
         }
