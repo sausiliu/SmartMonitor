@@ -56,6 +56,7 @@ void vAlertorTask(void * pvParameters)
 #endif
           ){
             doAlert();
+						vTaskDelay(1500);
             printf("Alertor action!! \n\r");
             alert_flag = 0;//clear flag
             disableAlert();
@@ -72,6 +73,7 @@ void vAlertorTask(void * pvParameters)
 #endif
           ){
             doAlert();
+						vTaskDelay(1500);
             printf("Alertor action!! \n\r");
             alert_flag = 0;//clear flag
             disableAlert();
