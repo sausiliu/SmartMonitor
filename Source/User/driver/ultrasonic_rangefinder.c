@@ -17,6 +17,7 @@
 /* The highest available interrupt priority. */
 #define timerHIGHEST_PRIORITY			( 0 )
 #define SOUND_VELOCITY	340.0f
+#define ALERT_DISTANCE	175.0f
 
 /**
 	*
@@ -41,7 +42,7 @@ void vURFSensor( void *pvParameters )
     GPIO_Init(GPIOA, &GPIO_InitStructure);
     GPIO_WriteBit(GPIOA, GPIO_Pin_5, Bit_RESET);
 
-    /*enable EXTI4 PB4*/
+    /*enable EXTI4 PA4*/
     GPIO_EXTILineConfig(GPIO_PortSourceGPIOA, GPIO_PinSource4);
 
     EXTI_InitStructure.EXTI_Line = EXTI_Line4;
@@ -71,8 +72,8 @@ void vURFSensor( void *pvParameters )
         else
             usDifference = 0xffff - (usLastCount - usThisCount);
         distance = usDifference * SOUND_VELOCITY / (2 * 1000.0f);//Period = 10uS
-        printf("distance: %3.2fcm \n\r", distance);
-        if(distance < 30.0f) {
+        printf("distance: %3.3fcm \n\r", distance);
+        if(distance < ALERT_DISTANCE) {
             alert_flag |= RANGEFINDER_ALERT;
         }
         vTaskDelay(2000);
