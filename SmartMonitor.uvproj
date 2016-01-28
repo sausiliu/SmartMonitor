@@ -484,6 +484,11 @@
               <FileType>1</FileType>
               <FilePath>.\Source\User\driver\infrared_motition.c</FilePath>
             </File>
+            <File>
+              <FileName>alertor.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Source\User\driver\alertor.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>

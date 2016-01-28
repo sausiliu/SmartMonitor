@@ -53,6 +53,8 @@
 #include "serial.h"
 #include "semphr.h"
 #include "ultrasonic_rangefinder.h"
+#include "infrared_monitor.h"
+#include "alertor.h"
 
 /* Task priorities. */
 #define mainQUEUE_POLL_PRIORITY					( tskIDLE_PRIORITY + 2 )
@@ -63,7 +65,6 @@
 #define mainFLASH_TASK_PRIORITY					( tskIDLE_PRIORITY + 1 )
 #define mainCOM_TEST_PRIORITY						( tskIDLE_PRIORITY + 1 )
 #define mainINTEGER_TASK_PRIORITY       ( tskIDLE_PRIORITY )
-
 
 /* The check task uses the sprintf function so requires a little more stack. */
 #define mainCHECK_TASK_STACK_SIZE			( configMINIMAL_STACK_SIZE + 50 )
@@ -101,19 +102,12 @@ static void prvSetupHardware( void );
 int fputc( int ch, FILE *f );
 
 /*
- * Checks the status of all the demo tasks then prints a message to the
- * display.  The message will be either PASS - and include in brackets the
- * maximum measured jitter time (as described at the to of the file), or a
- * message that describes which of the standard demo tasks an error has been
- * discovered in.
- *
- * Messages are not written directly to the terminal, but passed to vLCDTask
- * via a queue.
+ * Task
  */
-static void vCheckTask( void *pvParameters );
-void vUARTPrintTask( void *pvParameters );
 static void vLEDTask( void *pvParameters );
+#ifdef ENABLE_LIGHT_SENSOR
 static void vLightSensorTask( void *pvParameters );
+#endif
 static void vWDTTask( void *pvParameters );
 
 /*
@@ -122,12 +116,10 @@ static void vWDTTask( void *pvParameters );
  */
 extern void vSetupTimerTest( void );
 extern signed portBASE_TYPE xSerialPutChar( xComPortHandle, signed char , TickType_t);
-
 /*-----------------------------------------------------------*/
 
 /* The queue used to send messages to the uart task. */
 QueueHandle_t xUARTQueue;
-
 xSemaphoreHandle xSem, xSem1;
 
 /*-----------------------------------------------------------*/
@@ -144,16 +136,21 @@ int main( void )
 //	xSem1	= xSemaphoreCreateBinary();
     prvSetupHardware();
 
-    /* Start the standard demo tasks. */
-
+    /* Start the standard monitor tasks. */
     vAltStartComTestTasks( mainCOM_TEST_PRIORITY, mainCOM_TEST_BAUD_RATE, mainCOM_TEST_LED );
-//	  xTaskCreate( vUARTPrintTask, "uart_print", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY, NULL );
     xTaskCreate( vLEDTask, "led_test", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY, NULL );
-//    xTaskCreate( vLightSensorTask, "light sensor", configMINIMAL_STACK_SIZE, NULL, 6, NULL );
+#ifdef ENABLE_LIGHT_SENSOR
+    xTaskCreate( vLightSensorTask, "light sensor", configMINIMAL_STACK_SIZE, NULL, 6, NULL );
+#endif
+#ifdef ENBALE_RANGEFINDER_SENSOR
     xTaskCreate( vURFSensor, "UltrasonicRangefinder", configMINIMAL_STACK_SIZE, NULL, 6, NULL );
+#endif
 //    xTaskCreate( vCheckTask, "Check", mainCHECK_TASK_STACK_SIZE, NULL, mainCHECK_TASK_PRIORITY, NULL );
-    xTaskCreate( vWDTTask, "task2", configMINIMAL_STACK_SIZE, NULL, 6, NULL );
-
+#ifdef ENABLE_INFRARED_SENSOR
+    vInfraredTask( );
+#endif
+    xTaskCreate( vWDTTask, "watch dog task", configMINIMAL_STACK_SIZE, NULL, 6, NULL );
+    xTaskCreate( vAlertorTask, "Aletor task", configMINIMAL_STACK_SIZE, NULL, 6, NULL );
     /* The suicide tasks must be created last as they need to know how many
     tasks were running prior to their creation in order to ascertain whether
     or not the correct/expected number of tasks are running at any given time. */
@@ -190,6 +187,7 @@ void vLEDTask(void * pvParameters)
 }
 
 /*-----------------------------------------------------------*/
+#ifdef ENABLE_LIGHT_SENSOR
 static void vLightSensorTask( void *pvParameters )
 {
     GPIO_InitTypeDef GPIO_InitStructure;
@@ -210,9 +208,7 @@ static void vLightSensorTask( void *pvParameters )
     }
 }
 /*-----------------------------------------------------------*/
-
-
-
+#endif
 
 static void vWDTTask( void *pvParameters )
 {
@@ -223,58 +219,6 @@ static void vWDTTask( void *pvParameters )
     for(;;) {
         vTaskDelay(100);
         IWDG_ReloadCounter();
-    }
-}
-
-static void vCheckTask( void *pvParameters )
-{
-    TickType_t xLastExecutionTime;
-    xUARTMessage xMessage;
-    static signed char cPassMessage[ mainMAX_MSG_LEN ];
-    extern unsigned short usMaxJitter;
-
-    xLastExecutionTime = xTaskGetTickCount();
-    xMessage.pcMessage = cPassMessage;
-
-    for( ;; ) {
-        /* Perform this check every mainCHECK_DELAY milliseconds. */
-        vTaskDelayUntil( &xLastExecutionTime, mainCHECK_DELAY );
-
-        /* Has an error been found in any task? */
-
-        if( xAreBlockingQueuesStillRunning() != pdTRUE ) {
-            xMessage.pcMessage = "ERROR IN BLOCK Q\n";
-        } else if( xAreBlockTimeTestTasksStillRunning() != pdTRUE ) {
-            xMessage.pcMessage = "ERROR IN BLOCK TIME\n";
-        } else if( xAreSemaphoreTasksStillRunning() != pdTRUE ) {
-            xMessage.pcMessage = "ERROR IN SEMAPHORE\n";
-        } else if( xArePollingQueuesStillRunning() != pdTRUE ) {
-            xMessage.pcMessage = "ERROR IN POLL Q\n";
-        } else if( xIsCreateTaskStillRunning() != pdTRUE ) {
-            xMessage.pcMessage = "ERROR IN CREATE\n";
-        } else if( xAreIntegerMathsTaskStillRunning() != pdTRUE ) {
-            xMessage.pcMessage = "ERROR IN MATH\n";
-        }
-//        else if( xAreComTestTasksStillRunning() != pdTRUE )
-//        {
-//            xMessage.pcMessage = "ERROR IN COM TEST\n";
-//        }
-        else {
-            sprintf( ( char * ) cPassMessage, "PASS [%uns]\n", ( ( unsigned long ) usMaxJitter ) * mainNS_PER_CLOCK );
-        }
-        /* Send the message to the LCD gatekeeper for display. */
-        xQueueSend( xUARTQueue, &xMessage, portMAX_DELAY );
-    }
-}
-/*-----------------------------------------------------------*/
-void vUARTPrintTask( void *pvParameters )
-{
-    xUARTMessage xMessage;
-
-    for( ;; )
-    {
-        while( xQueueReceive( xUARTQueue, &xMessage, portMAX_DELAY ) != pdPASS );
-        printf( ( char const * ) xMessage.pcMessage );
     }
 }
 

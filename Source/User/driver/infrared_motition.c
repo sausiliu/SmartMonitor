@@ -19,30 +19,77 @@
 #include "stm32f10x_it.h"
 #include "stm32f10x_rcc.h"
 
-#include "infrared_motition.h"
+#include "infrared_monitor.h"
+#include "alertor.h"
 
+/*
+ * Task
+ */
+#ifdef	INFRARED_SENSOR_1
+static void vInfrared1Task( void *pvParameters );
+#endif
+#ifdef INFRARED_SENSOR_2
+static void vInfrared2Task( void *pvParameters );
+#endif
 
-void vWDTTask( void *pvParameters )
+extern unsigned char alert_flag;
+
+void vInfraredTask(void )
 {
-    GPIO_InitTypeDef GPIO_InitStructure;
-
-    /* GPA 6 control the sensor */
-    GPIO_InitStructure.GPIO_Pin = GPIO_Pin_6;
-    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN_FLOATING;
-    GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
-    GPIO_Init(GPIOA, &GPIO_InitStructure);
-
-    /* GPA 7 control the sensor */
-    GPIO_InitStructure.GPIO_Pin = GPIO_Pin_7;
-    GPIO_Init(GPIOA, &GPIO_InitStructure);
-
-    for(;;) {
-				if(Bit_SET == GPIO_ReadInputDataBit(GPIOA, GPIO_Pin_6))
-					printf("GPIO_pin 6 is high\n\r");
-				
-				if(Bit_SET == GPIO_ReadInputDataBit(GPIOA, GPIO_Pin_7))
-					printf("GPIO_pin 6 is high\n\r");				
-        vTaskDelay(2000);
-    }
+#ifdef INFRARED_SENSOR_1
+    xTaskCreate( vInfrared1Task, "infrared sensor 1", configMINIMAL_STACK_SIZE, NULL, 6, NULL );
+#endif
+#ifdef INFRARED_SENSOR_2
+    xTaskCreate( vInfrared2Task, "infrared sensor 2", configMINIMAL_STACK_SIZE, NULL, 6, NULL );
+#endif
 }
 
+#ifdef INFRARED_SENSOR_1
+/* infrared sensor 1*/
+static void vInfrared1Task( void *pvParameters )
+{
+    GPIO_InitTypeDef GPIO_InitStructure;
+    /* GPB 5 control the sensor */
+    GPIO_InitStructure.GPIO_Pin = GPIO_Pin_5;
+    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN_FLOATING;
+    GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+    GPIO_Init(GPIOB, &GPIO_InitStructure);
+
+    for(;;) {
+        if(Bit_SET == GPIO_ReadInputDataBit(GPIOB, GPIO_Pin_5)) {
+            vTaskDelay(1000);
+            if(Bit_SET == GPIO_ReadInputDataBit(GPIOB, GPIO_Pin_5)) {
+               alert_flag |= INFRARED1_ALERT;
+                printf("GPIO GPB_5 is high\n\r");
+            }
+            vTaskDelay(10);
+        }
+        vTaskDelay(100);
+    }
+}
+#endif
+
+#ifdef INFRARED_SENSOR_2
+/* infrared sensor 2*/
+static void vInfrared2Task( void *pvParameters )
+{
+    GPIO_InitTypeDef GPIO_InitStructure;
+    /* GPB 4 control the sensor */
+    GPIO_InitStructure.GPIO_Pin = GPIO_Pin_4;
+    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN_FLOATING;
+    GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+    GPIO_Init(GPIOB, &GPIO_InitStructure);
+
+    for(;;) {
+        if(Bit_SET == GPIO_ReadInputDataBit(GPIOB, GPIO_Pin_4)) {
+            vTaskDelay(1000);
+            if(Bit_SET == GPIO_ReadInputDataBit(GPIOB, GPIO_Pin_4)) {
+               alert_flag |= INFRARED2_ALERT;
+                printf("GPIO GPB_4 is high\n\r");
+            }
+            vTaskDelay(10);
+        }
+        vTaskDelay(100);
+    }
+}
+#endif
