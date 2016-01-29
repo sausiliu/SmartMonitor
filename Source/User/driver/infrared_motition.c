@@ -51,17 +51,22 @@ static void vInfrared1Task( void *pvParameters )
     GPIO_InitTypeDef GPIO_InitStructure;
     /* GPB 5 control the sensor */
     GPIO_InitStructure.GPIO_Pin = GPIO_Pin_5;
-//    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN_FLOATING;
     GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IPU;
     GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
     GPIO_Init(GPIOB, &GPIO_InitStructure);
 
     for(;;) {
+
+        if(alert_flag & INFRARED1_ALERT) {
+            vTaskDelay(3000);
+            continue;
+        }
         if(Bit_SET == GPIO_ReadInputDataBit(GPIOB, GPIO_Pin_5)) {
             vTaskDelay(1000);
             if(Bit_SET == GPIO_ReadInputDataBit(GPIOB, GPIO_Pin_5)) {
                 alert_flag |= INFRARED1_ALERT;
                 printf("GPIO GPB_5 is high\n\r");
+                vTaskDelay(3000);
             }
             vTaskDelay(10);
         }
@@ -77,7 +82,7 @@ static void vInfrared2Task( void *pvParameters )
     GPIO_InitTypeDef GPIO_InitStructure;
     /* GPB 4 control the sensor */
     GPIO_InitStructure.GPIO_Pin = GPIO_Pin_4;
-    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN_FLOATING;
+    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IPU;
     GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
     GPIO_Init(GPIOB, &GPIO_InitStructure);
 

@@ -14,6 +14,7 @@
 #define ALERT_TIME 3500
 
 unsigned char alert_flag;
+unsigned char led_flag;
 
 /*
  * It will be on alert when the flowing conditions
@@ -24,12 +25,14 @@ unsigned char alert_flag;
 
 void doAlert(void)
 {
+    led_flag = BREATHING_LED;//
     GPIO_WriteBit(GPIOB, GPIO_Pin_8, Bit_SET);
     GPIO_WriteBit(GPIOB, GPIO_Pin_9, Bit_RESET);
 }
 
 void disableAlert(void)
 {
+    led_flag = FAST_LED_FLASH;//
     GPIO_WriteBit(GPIOB, GPIO_Pin_8, Bit_RESET);
 }
 void vAlertorTask(void * pvParameters)
@@ -42,46 +45,45 @@ void vAlertorTask(void * pvParameters)
 
     GPIO_InitStructure.GPIO_Pin = GPIO_Pin_9;
     GPIO_Init(GPIOB, &GPIO_InitStructure);//GP9 -- B_1B
-
-    vTaskDelay(2000);
+    vTaskDelay(5000);
+    led_flag = FAST_LED_FLASH;//
+    alert_flag = 0;
 
     for(;;) {
-			
 #ifdef ENABLE_LIGHT_SENSOR
         /*disable light sensor*/
         if((alert_flag & INFRARED1_ALERT)
 #ifdef INFRARED_SENSOR_2
-                &&(alert_flag & INFRARED2_ALERT)
+           &&(alert_flag & INFRARED2_ALERT)
 #endif
 #ifdef ENBALE_RANGEFINDER_SENSOR
-                &&(alert_flag & RANGEFINDER_ALERT)
+           &&(alert_flag & RANGEFINDER_ALERT)
 #endif
-          ){
+          ) {
             doAlert();
-						vTaskDelay(1500);
+            vTaskDelay(1500);
             printf("Alertor action!! \n\r");
             alert_flag = 0;//clear flag
             disableAlert();
         }
 #else  /*--- disable light sensor -----*/
-				
-				
+
         if((alert_flag & INFRARED1_ALERT)
 #ifdef INFRARED_SENSOR_2
-                &&(alert_flag & INFRARED2_ALERT)
+           &&(alert_flag & INFRARED2_ALERT)
 #endif
 #ifdef ENBALE_RANGEFINDER_SENSOR
-                &&(alert_flag & RANGEFINDER_ALERT)
+           &&(alert_flag & RANGEFINDER_ALERT)
 #endif
-          ){
+          ) {
             doAlert();
             printf("Alertor action!! \n\r");
-						vTaskDelay(ALERT_TIME);
+            vTaskDelay(ALERT_TIME);
             alert_flag = 0;//clear flag
             disableAlert();
-						vTaskDelay(2000);
-        }else
-					vTaskDelay(500);
+            vTaskDelay(2000);
+        } else
+            vTaskDelay(500);
 #endif
     }
 }

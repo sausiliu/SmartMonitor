@@ -10,6 +10,9 @@
 //#define INFRARED_SENSOR_2
 //-----------------------------------------------------
 
+#define BREATHING_LED		0
+#define FAST_LED_FLASH	1
+
 extern unsigned char alert_flag;
 #define INFRARED1_ALERT 		(0x01)
 #define INFRARED2_ALERT 		(0x02)
