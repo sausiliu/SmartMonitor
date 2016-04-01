@@ -89,6 +89,8 @@ information. */
 time. */
 #define mainUART_QUEUE_SIZE					( 10 )
 
+
+#define FLASH_NUM		30
 /*-----------------------------------------------------------*/
 
 /*
@@ -121,6 +123,8 @@ extern signed portBASE_TYPE xSerialPutChar( xComPortHandle, signed char , TickTy
 /* The queue used to send messages to the uart task. */
 QueueHandle_t xUARTQueue;
 xSemaphoreHandle xSem, xSem1;
+extern unsigned char led_flag;
+
 
 /*-----------------------------------------------------------*/
 int main( void )
@@ -170,19 +174,34 @@ int main( void )
 
 void vLEDTask(void * pvParameters)
 {
+    unsigned char i;
     GPIO_InitTypeDef GPIO_InitStructure;
     GPIO_InitStructure.GPIO_Pin = GPIO_Pin_13;
     GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;
     GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
     GPIO_Init(GPIOC, &GPIO_InitStructure);
-
     vTaskDelay(2000);
 
     for(;;) {
-        GPIO_WriteBit(GPIOC, GPIO_Pin_13, Bit_SET);
-        vTaskDelay(100);
-        GPIO_WriteBit(GPIOC, GPIO_Pin_13, Bit_RESET);
-        vTaskDelay(100);
+        if(!led_flag) {
+            GPIO_WriteBit(GPIOC, GPIO_Pin_13, Bit_SET);
+            vTaskDelay(100);
+            GPIO_WriteBit(GPIOC, GPIO_Pin_13, Bit_RESET);
+            vTaskDelay(100);
+        } else {
+            for(i = 1; i < FLASH_NUM; i++)
+            GPIO_WriteBit(GPIOC, GPIO_Pin_13, Bit_SET);
+            vTaskDelay(i);
+            GPIO_WriteBit(GPIOC, GPIO_Pin_13, Bit_RESET);
+            vTaskDelay(FLASH_NUM - i);
+            for(; i >= 1; i--) {
+                GPIO_WriteBit(GPIOC, GPIO_Pin_13, Bit_SET);
+                vTaskDelay(i);
+                GPIO_WriteBit(GPIOC, GPIO_Pin_13, Bit_RESET);
+                vTaskDelay(FLASH_NUM - i);
+            }
+        }
+
     }
 }
 

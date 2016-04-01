@@ -10,11 +10,14 @@
 //#define INFRARED_SENSOR_2
 //-----------------------------------------------------
 
+#define FAST_FLASH		0
+#define NORMAL_FLASH	1
+
 extern unsigned char alert_flag;
 #define INFRARED1_ALERT 		(0x01)
-#define INFRARED2_ALERT 		(0x02)
+//#define INFRARED2_ALERT 		(0x02)
 #define RANGEFINDER_ALERT		(0x04)
-#define LIGHT_CONDITION			(0x80)
+//#define LIGHT_CONDITION			(0x80)
 
 void vAlertorTask(void * pvParameters);
 

@@ -60,8 +60,10 @@ static void vInfrared1Task( void *pvParameters )
         if(Bit_SET == GPIO_ReadInputDataBit(GPIOB, GPIO_Pin_5)) {
             vTaskDelay(1000);
             if(Bit_SET == GPIO_ReadInputDataBit(GPIOB, GPIO_Pin_5)) {
-                alert_flag |= INFRARED1_ALERT;
-                printf("GPIO GPB_5 is high\n\r");
+                if(alert_flag & RANGEFINDER_ALERT) {
+                    alert_flag |= INFRARED1_ALERT;
+                    printf("GPIO GPB_5 is high\n\r");
+                }
             }
             vTaskDelay(10);
         }
